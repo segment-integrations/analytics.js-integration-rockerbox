@@ -2,7 +2,7 @@
   "name": "analytics.js-integration-rockerbox",
   "repo": "segment-integrations/analytics.js-integration-rockerbox",
   "description": "The Rockerbox analytics.js integration.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "license": "LicenseRef-LICENSE",
   "main": "lib/index.js",
   "dependencies": {

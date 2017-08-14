@@ -1,166 +1,117 @@
 'use strict';
 
 var Analytics = require('@segment/analytics.js-core').constructor;
-var integration = require('@segment/analytics.js-integration');
 var sandbox = require('@segment/clear-env');
 var tester = require('@segment/analytics.js-integration-tester');
-var Rockerbox = require('../lib/');
+var RockerboxPixel = require('../lib');
 
-describe('Rockerbox', function() {
-  var rockerbox;
+describe('Rockerbox Pixel', function() {
   var analytics;
+  var rockerboxPixel;
   var options = {
-    // 'bonobos',
-    source: 'source',
-    // '1631414',
-    allAnSeg: 'allAnSeg',
-    // '1675564',
-    customerAnSeg: 'customerAnSeg',
-    events: [
-      {
-        key: 'signup',
-        value: {
-          conversionId: 'c36462a3',
-          segmentId: '45'
-        }
-      },
-      {
-        key: 'login',
-        value: {
-          conversionId: '6137ab24',
-          segmentId: '50',
-          property: 'userId'
-        }
-      },
-      {
-        key: 'play',
-        value: {
-          conversionId: 'e3196de1',
-          segmentId: '10',
-          property: 'orderId'
-        }
-      }
-    ]
+    pixel_code: 'cHVzaG1haWx8NDQ2MDM5OHw0NDYwMzkyOjY1NzU2OXw0NDYwMzkzOjY1NzU2OHw0NDYwMzk5'
   };
 
   beforeEach(function() {
     analytics = new Analytics();
-    rockerbox = new Rockerbox(options);
-    analytics.use(Rockerbox);
+    rockerboxPixel = new RockerboxPixel(options);
+    analytics.use(RockerboxPixel);
     analytics.use(tester);
-    analytics.add(rockerbox);
+    analytics.add(rockerboxPixel);
   });
 
   afterEach(function() {
     analytics.restore();
     analytics.reset();
-    rockerbox.reset();
+    rockerboxPixel.reset();
     sandbox();
   });
 
-  it('should have the correct settings', function() {
-    analytics.compare(Rockerbox, integration('Rockerbox')
-      .option('source', '')
-      .option('allAnSeg', '')
-      .option('customerAnSeg', '')
-      .option('conversionId', '')
-      .option('segmentId', '')
-      .mapping('events'));
+  describe('before loading', function() {
+    beforeEach(function() {
+      analytics.stub(rockerboxPixel, 'load');
+      analytics.initialize();
+    });
+
+    afterEach(function() {
+      rockerboxPixel.reset();
+    });
+
+    describe('#initialize', function() {
+      it('should call load on initialize', function() {
+        analytics.called(rockerboxPixel.load);
+      });
+
+      it('should set the correct source', function() {
+        analytics.equal(window.RB.source, options.pixel_code);
+      });
+
+      it('should set disablePushState to true', function() {
+        analytics.equal(window.RB.disablePushState, true);
+      });
+
+      it('should create track object', function() {
+        analytics.assert(window.RB.track instanceof Function);
+      });
+
+      it('should queue events to be tracked', function() {
+        window.RB.track('view');
+        analytics.assert(window.RB.queue.length === 1);
+      });
+    });
+  });
+
+  describe('loading', function() {
+    it('should load', function(done) {
+      analytics.load(rockerboxPixel, done);
+    });
   });
 
   describe('after loading', function() {
     beforeEach(function(done) {
       analytics.once('ready', done);
       analytics.initialize();
-      analytics.page();
     });
 
     describe('#page', function() {
       beforeEach(function() {
-        analytics.spy(rockerbox, 'load');
+        analytics.stub(window.RB, 'track');
       });
 
-      it('should load the pixel on every page', function() {
+      it('should track a pageview', function() {
         analytics.page();
-        analytics.loaded('<script src="https://getrockerbox.com/pixel'
-          + '?source=' + options.source
-          + '&type=imp'
-          + '&an_seg=' + options.allAnSeg
-          + '">');
-      });
-
-      it('shouldn\'t load customer pixel if not identified', function() {
-        analytics.page();
-        analytics.calledOnce(rockerbox.load);
-      });
-
-      it('should load customer pixel if identified', function() {
-        analytics.identify('id', {
-          firstName: 'john',
-          lastName: 'doe',
-          email: 'my@email.com'
-        });
-
-        analytics.page();
-        analytics.loaded('<script src="https://getrockerbox.com/pixel'
-          + '?source=' + options.source
-          + '&type=imp'
-          + '&an_seg=' + options.customerAnSeg
-          + '">');
-
-        analytics.assert(rockerbox.load.calledTwice);
+        analytics.called(window.RB.track, 'view');
       });
     });
 
     describe('#track', function() {
       beforeEach(function() {
-        analytics.spy(rockerbox, 'load');
+        analytics.stub(window.RB, 'track');
       });
 
-      it('should not send if event is not defined', function() {
-        analytics.track('toString', {});
-        analytics.didNotCall(rockerbox.load);
-      });
+      describe('event not mapped to legacy or standard', function() {
+        it('should send a "custom" event', function() {
+          analytics.track('view');
+          analytics.called(window.RB.track, 'view');
+        });
 
-      it('should send event if found', function() {
-        analytics.user().id('id');
-        analytics.user().traits({ email: 'example@email.com' });
-        analytics.track('signup');
-        var event = options.events[0].value;
-        analytics.loaded('<script src="https://secure.adnxs.com/px'
-          + '?id=' + event.conversionId
-          + '&seg=' + event.segmentId
-          + '&t=1'
-          + '&order_id=' + 'example@email.com'
-          + '">');
-        analytics.loaded('<script src="https://getrockerbox.com/pixel'
-          + '?source=' + options.source
-          + '&type=conv'
-          + '&id=' + event.conversionId
-          + '&an_seg=' + event.segmentId
-          + '&order_type=' + 'example@email.com'
-          + '">');
-      });
+        it('should send a "custom" event and properties', function() {
+          analytics.track('custom_event', { property: true });
+          analytics.called(window.RB.track, 'custom_event', { property: true });
+        });
 
-      it('should use custom property for id if defined', function() {
-        analytics.user().id('id');
-        analytics.user().traits({ email: 'example@email.com' });
-        analytics.track('play', { orderId: 123 });
-        var event = options.events[2].value;
-        analytics.loaded('<script src="https://secure.adnxs.com/px'
-          + '?id=' + event.conversionId
-          + '&seg=' + event.segmentId
-          + '&t=1'
-          + '&order_id=123'
-          + '">');
-        analytics.loaded('<script src="https://getrockerbox.com/pixel'
-          + '?source=' + options.source
-          + '&type=conv'
-          + '&id=' + event.conversionId
-          + '&an_seg=' + event.segmentId
-          + '&order_type=123'
-          + '">');
+        it('should send properties correctly', function() {
+          analytics.track('event', {
+            currency: 'XXX',
+            property: true
+          });
+          analytics.called(window.RB.track, 'event', {
+            currency: 'XXX',
+            property: true
+          });
+        });
       });
     });
   });
 });
+

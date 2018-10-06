@@ -1,12 +1,13 @@
-# analytics.js-integration-rockerbox [![Build Status][ci-badge]][ci-link]
 
-Rockerbox integration for [Analytics.js][].
+# [MOVED] Analytics JS integration rockerbox
 
-## License
+**This repository has been moved to the open source [Analytics JS Integrations](https://github.com/segmentio/analytics.js-integrations).**
+
+If you want to fork, contribute, or open issues, please do it in the new repository. Existing issues/pull requests will be addressed in the new location.
+
+* [New location](https://github.com/segmentio/analytics.js-integrations/tree/master/integrations/rockerbox)
+* Last release for this repository: [2.0.0](https://github.com/segment-integrations/analytics.js-integration-rockerbox/releases/tag/2.0.0)
+* [Commit](https://github.com/segmentio/analytics.js-integrations/commit/a2bda2444ae4076a361e183b577d1fc763c36109)
+* [Previous version of this README](README-OLD.md)
 
 Released under the [MIT license](LICENSE).
-
-
-[Analytics.js]: https://segment.com/docs/libraries/analytics.js/
-[ci-link]: https://circleci.com/gh/segment-integrations/analytics.js-integration-rockerbox
-[ci-badge]: https://circleci.com/gh/segment-integrations/analytics.js-integration-rockerbox.svg?style=svg&circle-token=7dd5b1fa1cd8ddc8b88007a2da9f0a6803de5733
